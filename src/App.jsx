@@ -1,5 +1,9 @@
-import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { NavLink, Outlet } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { Search, Bell, ChevronDown } from 'lucide-react';
+import { useTheme, ThemeToggle } from './theme/ThemeContext';
+import { serif, sans } from './theme/Themes';
 
 const navItems = [
   { id: 1, label: 'Action', to: '/action' },
@@ -7,180 +11,205 @@ const navItems = [
   { id: 3, label: 'Drama', to: '/drama' },
   { id: 4, label: 'Horror', to: '/horror' },
   { id: 5, label: 'Sci-Fi', to: '/sci-fi' },
-  { id: 6, label: 'Romance', to: '/romance' },
-  { id: 7, label: 'Thriller', to: '/thriller' },
-  { id: 8, label: 'Animation', to: '/animation' }
+  { id: 6, label: 'Thriller', to: '/thriller' },
 ];
 
 const moreGenres = [
-  { id: 1, label: 'Fantasy', to: '/fantasy' },
-  { id: 2, label: 'Mystery', to: '/mystery' },
-  { id: 3, label: 'Documentary', to: '/documentary' },
-  { id: 4, label: 'Crime', to: '/crime' }
+  { id: 1, label: 'Romance', to: '/romance' },
+  { id: 2, label: 'Animation', to: '/animation' },
+  { id: 3, label: 'Fantasy', to: '/fantasy' },
+  { id: 4, label: 'Mystery', to: '/mystery' },
+  { id: 5, label: 'Documentary', to: '/documentary' },
+  { id: 6, label: 'Crime', to: '/crime' },
 ];
 
+/* ------------------------------------------------------------------ */
+/*  More dropdown — closes on outside click                            */
+/* ------------------------------------------------------------------ */
+
 function MoreDropdown() {
+  const { theme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="px-5 py-2 rounded-sm text-[13px] tracking-[0.08em] font-medium border border-[#C9A24B]/40 text-[#EFE7D6]/85 bg-[#1B1518]/60 backdrop-blur-sm hover:border-[#C9A24B] hover:text-[#C9A24B] transition-colors duration-300"
-        style={{ fontFamily: "'Inter', sans-serif" }}
+        onClick={() => setIsOpen((v) => !v)}
+        className="flex items-center gap-1.5 px-4 py-1.5 rounded-sm text-[13px] tracking-[0.08em] font-medium transition-colors duration-300"
+        style={{ fontFamily: sans, border: `1px solid ${theme.border}`, color: theme.textDim, background: theme.inputBg }}
       >
         More
+        <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.25 }}>
+          <ChevronDown size={13} strokeWidth={2} />
+        </motion.span>
       </button>
 
-      {isOpen && (
-        <div className="absolute top-full right-0 mt-2 min-w-[160px] bg-[#150F12] rounded-sm shadow-[0_12px_30px_rgba(0,0,0,0.5)] border border-[#C9A24B]/25 overflow-hidden z-10">
-          {moreGenres.map((genre) => (
-            <NavLink
-              key={genre.id}
-              to={genre.to}
-              onClick={() => setIsOpen(false)}
-              className={({ isActive }) =>
-                `block px-5 py-3 text-[15px] border-l-2 transition-colors duration-200 ${isActive
-                  ? 'border-l-[#C9A24B] text-[#C9A24B] bg-[#C9A24B]/5'
-                  : 'border-l-transparent text-[#EFE7D6]/75 hover:border-l-[#C9A24B]/50 hover:text-[#C9A24B] hover:bg-white/[0.02]'
-                }`
-              }
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
-            >
-              {genre.label}
-            </NavLink>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.98 }}
+            transition={{ duration: 0.18 }}
+            className="absolute top-full right-0 mt-2 min-w-44 rounded-sm overflow-hidden z-20"
+            style={{ background: theme.panelSolid, border: `1px solid ${theme.border}`, boxShadow: '0 16px 34px rgba(0,0,0,0.35)' }}
+          >
+            {moreGenres.map((genre) => (
+              <NavLink
+                key={genre.id}
+                to={genre.to}
+                onClick={() => setIsOpen(false)}
+                className="block px-5 py-2.5 text-[16px] border-l-2 transition-colors duration-200"
+                style={({ isActive }) => ({
+                  fontFamily: serif,
+                  borderLeftColor: isActive ? theme.accent : 'transparent',
+                  color: isActive ? theme.accent : theme.textDim,
+                  background: isActive ? theme.accentSoft : 'transparent',
+                })}
+              >
+                {genre.label}
+              </NavLink>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  App                                                                 */
+/* ------------------------------------------------------------------ */
+
 function App() {
+  const { theme } = useTheme();
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap');
       `}</style>
 
-      <div className="bg-[#0A0708] w-screen h-screen p-10">
+      <div
+        className="w-screen h-screen p-10 transition-colors duration-500"
+        style={{ background: theme.bg }}
+      >
         <div
           className="relative w-full h-full rounded-2xl shadow-md bg-cover bg-center overflow-hidden"
           style={{ backgroundImage: `url('/bg/b04.jpeg')` }}
         >
-          {/* dark vignette so content stays legible over the photo */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/60 to-black/80" />
+          {/* theme-aware vignette so content stays legible over the photo */}
+          <div className="absolute inset-0 transition-[background] duration-500" style={{ background: theme.overlay }} />
 
-          {/* layout container  */}
-          <div className="relative bg-[#120D0F]/70 backdrop-blur-md w-full h-full rounded-2xl border border-[#C9A24B]/20 p-5">
-            {/* nav  */}
-            <div className="w-full h-[10%] flex items-center border-b border-[#C9A24B]/15">
-              {/* brand + search box */}
-              <div className="w-[20%] h-full flex items-center gap-4 px-5">
+          {/* layout container */}
+          <div
+            className="relative backdrop-blur-md w-full h-full rounded-2xl p-5 flex flex-col transition-colors duration-500"
+            style={{ background: theme.panel, border: `1px solid ${theme.border}` }}
+          >
+            {/* nav */}
+            <div
+              className="w-full shrink-0 h-20 flex items-center justify-between gap-6 border-b px-2 transition-colors duration-500"
+              style={{ borderColor: theme.border }}
+            >
+              {/* brand + search */}
+              <div className="flex items-center gap-5 flex-1 min-w-0 px-3">
                 <span
-                  className="text-[17px] text-[#C9A24B] tracking-[0.03em] shrink-0"
-                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  className="text-[19px] tracking-[0.02em] shrink-0 italic transition-colors duration-500"
+                  style={{ fontFamily: serif, color: theme.accent }}
                 >
-                  Reelhouse
+                  MovieDetails
                 </span>
-                <div className="relative w-full">
+                <div className="relative w-full max-w-72 hidden md:block">
                   <input
                     type="text"
-                    placeholder="Search..."
-                    className="w-full pl-10 pr-4 py-2 rounded-sm text-sm outline-none border border-[#C9A24B]/25 bg-[#1B1518]/60 text-[#EFE7D6] placeholder-[#EFE7D6]/40 focus:border-[#C9A24B] transition-colors duration-200"
-                    style={{ fontFamily: "'Inter', sans-serif" }}
+                    placeholder="Search…"
+                    className="w-full pl-10 pr-4 py-2 rounded-sm text-sm outline-none transition-colors duration-300"
+                    style={{
+                      fontFamily: sans,
+                      border: `1px solid ${theme.border}`,
+                      background: theme.inputBg,
+                      color: theme.text,
+                    }}
                   />
-                  <svg
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#C9A24B]/60"
-                    fill="none"
-                    stroke="currentColor"
+                  <Search
+                    size={15}
                     strokeWidth={1.5}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
-                    />
-                  </svg>
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2"
+                    style={{ color: theme.textFaint }}
+                  />
                 </div>
               </div>
 
-              {/* list */}
-              <div className="w-[60%] h-full flex items-center justify-end gap-6 px-2">
-                {/* nav links */}
-                <nav className="flex items-center gap-7">
-                  {navItems.map((item) => (
-                    <NavLink
-                      key={item.id}
-                      to={item.to}
-                      end={item.to === '/'}
-                      className={({ isActive }) =>
-                        `relative pb-1 text-[16px] tracking-[0.01em] transition-colors duration-300 after:content-[''] after:absolute after:left-0 after:-bottom-0.5 after:h-px after:bg-[#C9A24B] after:transition-all after:duration-300 ${isActive
-                          ? 'text-[#C9A24B] after:w-full'
-                          : 'text-[#EFE7D6]/75 hover:text-[#C9A24B] after:w-0 hover:after:w-full'
-                        }`
-                      }
-                      style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                    >
-                      {item.label}
-                    </NavLink>
-                  ))}
-                </nav>
-
-                {/* Item 5 — custom dropdown */}
-                <MoreDropdown />
-              </div>
-
-              {/* notification and profile */}
-              <div className="w-[20%] h-full flex items-center justify-end gap-4 px-5">
-                {/* Notification bell */}
-                <button className="relative p-2 rounded-full border border-[#C9A24B]/25 bg-[#1B1518]/60 hover:border-[#C9A24B] transition-colors duration-200">
-                  <svg
-                    className="w-5 h-5 text-[#EFE7D6]/80"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                    viewBox="0 0 24 24"
+              {/* nav links */}
+              <nav className="hidden lg:flex items-center gap-7 shrink-0">
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.id}
+                    to={item.to}
+                    className="relative pb-1 text-[16px] tracking-[0.01em] transition-colors duration-300"
+                    style={({ isActive }) => ({ fontFamily: serif, color: isActive ? theme.accent : theme.textDim })}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                    />
-                  </svg>
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#8C2A2A] border border-[#150F12]" />
+                    {({ isActive }) => (
+                      <>
+                        {item.label}
+                        <span
+                          className="absolute left-0 -bottom-0.5 h-px transition-all duration-300"
+                          style={{ width: isActive ? '100%' : '0%', background: theme.accent }}
+                        />
+                      </>
+                    )}
+                  </NavLink>
+                ))}
+                <MoreDropdown />
+              </nav>
+
+              {/* actions */}
+              <div className="flex items-center gap-3 shrink-0 px-3">
+                <ThemeToggle />
+
+                <button
+                  aria-label="Notifications"
+                  className="relative p-2 rounded-full transition-colors duration-300"
+                  style={{ border: `1px solid ${theme.border}`, background: theme.inputBg }}
+                >
+                  <Bell size={16} strokeWidth={1.5} style={{ color: theme.textDim }} />
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
+                    style={{ background: theme.accent }}
+                  />
                 </button>
 
-                {/* Profile */}
-                <button className="flex items-center gap-2 pl-1 pr-4 py-1 rounded-full border border-[#C9A24B]/25 bg-[#1B1518]/60 hover:border-[#C9A24B] transition-colors duration-200">
-                  <img
-                    src="/profile.jpg"
-                    alt="Profile"
-                    className="w-8 h-8 rounded-full object-cover border border-[#C9A24B]/40"
-                  />
-                  <span
-                    className="text-[15px] text-[#EFE7D6]/90"
-                    style={{ fontFamily: "'Cormorant Garamond', serif" }}
-                  >
-                    John Doe
-                  </span>
+                <button
+                  aria-label="Profile"
+                  className="p-0.5 rounded-full transition-colors duration-300"
+                  style={{ border: `1px solid ${theme.border}` }}
+                >
+                  <img src="./bg/b03.jpeg" alt="Profile" className="w-8 h-8 rounded-full object-cover" />
                 </button>
               </div>
             </div>
 
-            {/* outlet  */}
+            {/* outlet */}
             <div
-              className="rounded-sm border border-[#C9A24B]/15 w-full h-[90%] flex justify-center items-center text-[#EFE7D6]/50 text-[15px]"
-              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              className="rounded-sm w-full flex-1 min-h-0 flex justify-center items-center text-[15px] mt-5 transition-colors duration-500"
+              style={{ fontFamily: serif, border: `0px solid ${theme.border}`, color: theme.outletText }}
             >
-              outlet
+              <Outlet />
             </div>
           </div>
         </div>
       </div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

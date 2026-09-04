@@ -1,0 +1,41 @@
+export const serif = "'Cormorant Garamond', serif";
+export const sans = "'Inter', sans-serif";
+
+export const Themes = {
+    dark: {
+        bg: '#0A0708',
+        overlay: 'linear-gradient(180deg, rgba(6,4,7,0.82) 0%, rgba(6,4,7,0.68) 45%, rgba(6,4,7,0.9) 100%)',
+        panel: 'rgba(18,13,16,0.66)',
+        panelSolid: '#150F12',
+        border: 'rgba(201,162,75,0.22)',
+        borderStrong: 'rgba(201,162,75,0.5)',
+        accent: '#C9A24B',
+        accentSoft: 'rgba(201,162,75,0.1)',
+        text: '#EFE7D6',
+        textDim: 'rgba(239,231,214,0.68)',
+        textFaint: 'rgba(239,231,214,0.4)',
+        inputBg: 'rgba(27,21,24,0.55)',
+        outletText: 'rgba(239,231,214,0.42)',
+        chartGrid: 'rgba(239,231,214,0.08)',
+        chartPalette: ['#C9A24B', '#8B5A6B', '#5B7B8C', '#7A8C5B', '#9B6B8C', '#6B8C7A', '#8C7A5B', '#5B6B8C'],
+        shadow: "0 8px 24px rgba(0,0,0,0.35), 0 0 18px rgba(255,255,255,0.18)",
+    },
+    light: {
+        bg: '#EDE3D0',
+        overlay: 'linear-gradient(180deg, rgba(250,244,231,0.88) 0%, rgba(250,244,231,0.74) 45%, rgba(243,233,212,0.92) 100%)',
+        panel: 'rgba(255,251,243,0.72)',
+        panelSolid: '#FBF6EC',
+        border: 'rgba(122,42,52,0.2)',
+        borderStrong: 'rgba(122,42,52,0.55)',
+        accent: '#7A2A34',
+        accentSoft: 'rgba(122,42,52,0.08)',
+        text: '#2B211A',
+        textDim: 'rgba(43,33,26,0.68)',
+        textFaint: 'rgba(43,33,26,0.42)',
+        inputBg: 'rgba(255,255,255,0.55)',
+        outletText: 'rgba(43,33,26,0.4)',
+        chartGrid: 'rgba(43,33,26,0.08)',
+        chartPalette: ['#7A2A34', '#4B6B5A', '#8C6B3A', '#5A4B6B', '#3A6B7A', '#6B4B3A', '#4B5A6B', '#7A5A4B'],
+        shadow: "0 8px 24px rgba(43,33,26,0.18)",
+    },
+};
