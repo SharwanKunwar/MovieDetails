@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Bell, ChevronDown } from 'lucide-react';
 import { useTheme, ThemeToggle } from './theme/ThemeContext';
 import { serif, sans } from './theme/Themes';
+import { Button } from 'antd';
 
 const navItems = [
   { id: 1, label: 'Action', to: '/action' },
@@ -82,6 +83,7 @@ function MoreDropdown() {
           </motion.div>
         )}
       </AnimatePresence>
+
     </div>
   );
 }
@@ -170,10 +172,14 @@ function App() {
                   </NavLink>
                 ))}
                 <MoreDropdown />
+
               </nav>
 
               {/* actions */}
               <div className="flex items-center gap-3 shrink-0 px-3">
+                <Link to={"dashboard"}>
+                  <Button size="medium" className="bg-indigo-400! text-white! font-medium!">Dashboard</Button>
+                </Link>
                 <ThemeToggle />
 
                 <button

@@ -36,6 +36,6 @@ export const Themes = {
         outletText: 'rgba(43,33,26,0.4)',
         chartGrid: 'rgba(43,33,26,0.08)',
         chartPalette: ['#7A2A34', '#4B6B5A', '#8C6B3A', '#5A4B6B', '#3A6B7A', '#6B4B3A', '#4B5A6B', '#7A5A4B'],
-        shadow: "0 8px 24px rgba(43,33,26,0.18)",
+        shadow: "0 8px 15px rgba(43,33,26,0.18)",
     },
 };
