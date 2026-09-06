@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-
+import MovieDetailsModal from "../models/MovieDetailsModal";
 import { motion } from "motion/react";
 
 import {
@@ -33,6 +33,7 @@ import { useTheme } from "../theme/ThemeContext";
 import { serif, sans } from "../theme/Themes";
 
 import { Button, Modal } from "antd";
+import MovieCard from "../components/MovieCard";
 
 
 const API_URL =
@@ -696,12 +697,19 @@ function AddMovieModal({
 }
 
 
+
+
 // --------------------------------------------------
 // Dashboard
 // --------------------------------------------------
 
 function Dashboard() {
     const { theme } = useTheme();
+    const [selectedMovie, setSelectedMovie] = useState(null);
+    const [detailsOpen, setDetailsOpen] = useState(false);
+
+
+
 
     const {
         movies,
@@ -710,6 +718,35 @@ function Dashboard() {
         refetch,
     } = useMovies();
 
+    const handleDelete = async (movie) => {
+        try {
+            console.log("Deleting movie:", movie);
+            console.log("Movie ID:", movie.id);
+
+            const response = await fetch(
+                `http://localhost:8080/api/movies/hard/${movie.id}`,
+                {
+                    method: "DELETE",
+                }
+            );
+
+            console.log("Delete response:", response.status);
+
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(
+                    `Delete failed (${response.status}): ${message}`
+                );
+            }
+
+            console.log("Movie deleted successfully");
+
+            await refetch();
+
+        } catch (error) {
+            console.error("Delete movie error:", error);
+        }
+    };
 
     const [isOpen, setIsOpen] =
         useState(false);
@@ -802,7 +839,7 @@ function Dashboard() {
         yearFilter,
         sortBy,
     ]);
-
+    console.log(filtered);
 
     // --------------------------------------------------
     // Genre Distribution
@@ -1009,7 +1046,7 @@ function Dashboard() {
             >
 
                 {/* Image Slider */}
-                <div className="w-[30%] h-full">
+                <div className="w-[25%] h-full">
                     <ImageSlider
                         images={
                             fallbackImages
@@ -1019,7 +1056,7 @@ function Dashboard() {
 
 
                 {/* Dashboard Content */}
-                <div className="w-[70%] h-full overflow-y-auto scrollbar-hide px-3 space-y-3">
+                <div className="w-[75%] h-full overflow-y-auto scrollbar-hide px-3 space-y-3">
 
                     {/* Stats */}
                     <div className="grid grid-cols-4 gap-4">
@@ -1553,91 +1590,18 @@ function Dashboard() {
                     </div>
 
 
-                    {/* Movie Grid */}
-                    <div className="grid grid-cols-5 gap-4">
-
-                        {filtered
-                            .slice(0, 20)
-                            .map((movie) => (
-                                <motion.div
-                                    key={
-                                        movie.id
-                                    }
-                                    className="rounded-sm overflow-hidden aspect-4/3 relative group"
-                                    style={{
-                                        background:
-                                            theme.panel,
-                                        border:
-                                            `1px solid ${theme.border}`,
-                                        boxShadow:
-                                            theme.shadow,
-                                    }}
-                                    whileHover={{
-                                        scale: 1.03,
-                                    }}
-                                >
-
-                                    {movie.poster ? (
-                                        <img
-                                            src={
-                                                movie.poster
-                                            }
-                                            alt={
-                                                movie.title
-                                            }
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div
-                                            className="w-full h-full flex items-center justify-center text-xs"
-                                            style={{
-                                                color:
-                                                    theme.textFaint,
-                                            }}
-                                        >
-                                            No image
-                                        </div>
-                                    )}
-
-
-                                    <div
-                                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2"
-                                        style={{
-                                            background:
-                                                `linear-gradient(180deg, transparent 40%, ${theme.panelSolid} 100%)`,
-                                        }}
-                                    >
-                                        <p
-                                            className="text-xs font-medium truncate"
-                                            style={{
-                                                fontFamily:
-                                                    sans,
-                                                color:
-                                                    theme.text,
-                                            }}
-                                        >
-                                            {
-                                                movie.title
-                                            }
-                                        </p>
-
-                                        <p
-                                            className="text-[10px]"
-                                            style={{
-                                                color:
-                                                    theme.accent,
-                                            }}
-                                        >
-                                            ★{" "}
-                                            {
-                                                movie.rating
-                                            }
-                                        </p>
-                                    </div>
-
-                                </motion.div>
-                            ))}
-
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                        {filtered.map((movie) => (
+                            <MovieCard
+                                key={movie.id}
+                                movie={movie}
+                                onDetails={(movie) => {
+                                    setSelectedMovie(movie);
+                                    setDetailsOpen(true);
+                                }}
+                                onDelete={handleDelete}
+                            />
+                        ))}
                     </div>
 
                 </div>
@@ -1647,12 +1611,22 @@ function Dashboard() {
             {/* Add Movie Modal */}
             <AddMovieModal
                 open={isOpen}
-                onClose={() =>
-                    setIsOpen(false)
-                }
+                onClose={() => setIsOpen(false)}
                 onAdded={refetch}
                 theme={theme}
             />
+
+            {/* Movie Details Modal */}
+            <MovieDetailsModal
+                movie={selectedMovie}
+                open={detailsOpen}
+                onClose={() => {
+                    setDetailsOpen(false);
+                    setSelectedMovie(null);
+                }}
+            />
+
+
         </>
     );
 }

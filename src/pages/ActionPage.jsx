@@ -1,8 +1,11 @@
 
 
+
 function ActionPage() {
   return (
-    <div>ActionPage</div>
+    <>
+      action page
+    </>
   )
 }
 
