@@ -1,5 +1,8 @@
+
 import { useState, useEffect, useMemo } from "react";
+
 import MovieDetailsModal from "../models/MovieDetailsModal";
+
 import { motion } from "motion/react";
 
 import {
@@ -28,13 +31,15 @@ import {
 } from "lucide-react";
 
 import ImageSlider from "../components/ImageSlider";
-
 import { useTheme } from "../theme/ThemeContext";
 import { serif, sans } from "../theme/Themes";
-
 import { Button, Modal } from "antd";
 import MovieCard from "../components/MovieCard";
 
+
+// --------------------------------------------------
+// API URLs
+// --------------------------------------------------
 
 const API_URL =
     "http://localhost:8080/api/movies/all";
@@ -42,6 +47,10 @@ const API_URL =
 const ADD_MOVIE_URL =
     "http://localhost:8080/api/movies/create";
 
+
+// --------------------------------------------------
+// Fallback Images
+// --------------------------------------------------
 
 const fallbackImages = [
     "/slider_img/d01.jpeg",
@@ -82,14 +91,24 @@ function normalizeMovie(raw) {
         id: raw.id,
         title: raw.title,
         description: raw.description ?? "",
+
+        // NEW: Type
+        type: raw.type ?? "UNKNOWN",
+
         genre: raw.genre ?? "UNKNOWN",
+
         releaseDate: raw.releaseDate ?? null,
+
         year: raw.releaseDate
             ? new Date(raw.releaseDate).getFullYear()
             : 0,
+
         rating: raw.imdbRating ?? 0,
+
         length: raw.length ?? 0,
+
         poster: raw.posterUrl ?? null,
+
         deleted: raw.deleted ?? false,
     };
 }
@@ -110,7 +129,9 @@ function useMovies() {
         return fetch(API_URL)
             .then((res) => {
                 if (!res.ok) {
-                    throw new Error(`API responded ${res.status}`);
+                    throw new Error(
+                        `API responded ${res.status} `
+                    );
                 }
 
                 return res.json();
@@ -126,7 +147,9 @@ function useMovies() {
                 setMovies(
                     list
                         .map(normalizeMovie)
-                        .filter((movie) => !movie.deleted)
+                        .filter(
+                            (movie) => !movie.deleted
+                        )
                 );
 
                 setError(null);
@@ -175,7 +198,7 @@ function StatCard({
             className="rounded-sm p-4 flex items-center gap-3 transition-colors duration-500"
             style={{
                 background: theme.panel,
-                border: `1px solid ${theme.border}`,
+                border: `1px solid ${theme.border} `,
                 boxShadow: theme.shadow,
             }}
         >
@@ -232,7 +255,7 @@ function ChartCard({
             className="rounded-sm p-4 h-64 transition-colors duration-500"
             style={{
                 background: theme.panel,
-                border: `1px solid ${theme.border}`,
+                border: `1px solid ${theme.border} `,
                 boxShadow: theme.shadow,
             }}
         >
@@ -286,6 +309,7 @@ function Field({
 const EMPTY_MOVIE = {
     title: "",
     description: "",
+    type: "",
     genre: "",
     releaseDate: "",
     imdbRating: "",
@@ -313,15 +337,19 @@ function AddMovieModal({
     const [error, setError] =
         useState(null);
 
-
+    // Reset form whenever modal opens
     useEffect(() => {
         if (open) {
-            setForm(EMPTY_MOVIE);
+            setForm({
+                ...EMPTY_MOVIE,
+            });
+
             setError(null);
         }
     }, [open]);
 
 
+    // Update form
     const update = (field) => (e) => {
         setForm((previous) => ({
             ...previous,
@@ -330,73 +358,202 @@ function AddMovieModal({
     };
 
 
+    // --------------------------------------------------
+    // Submit Movie
+    // --------------------------------------------------
+
     const handleSubmit = async () => {
+
+        // Title
         if (!form.title.trim()) {
             setError("Title is required");
             return;
         }
 
+        // Description
+        if (!form.description.trim()) {
+            setError("Description is required");
+            return;
+        }
+
+        // Type
+        if (!form.type) {
+            setError("Type is required");
+            return;
+        }
+
+        // Genre
+        if (!form.genre) {
+            setError("Genre is required");
+            return;
+        }
+
+        // Release Date
+        if (!form.releaseDate) {
+            setError("Release date is required");
+            return;
+        }
+
+        // IMDB Rating
+        if (
+            form.imdbRating === "" ||
+            form.imdbRating === null
+        ) {
+            setError("IMDB rating is required");
+            return;
+        }
+
+        const rating = Number(
+            form.imdbRating
+        );
+
+        if (
+            Number.isNaN(rating) ||
+            rating < 0 ||
+            rating > 10
+        ) {
+            setError(
+                "IMDB rating must be between 0 and 10"
+            );
+            return;
+        }
+
+        // Length
+        if (
+            form.length === "" ||
+            form.length === null
+        ) {
+            setError("Length is required");
+            return;
+        }
+
+        const length = Number(form.length);
+
+        if (
+            Number.isNaN(length) ||
+            length < 1
+        ) {
+            setError(
+                "Length must be at least 1 minute"
+            );
+            return;
+        }
+
+        // Poster URL
+        if (!form.posterUrl.trim()) {
+            setError("Poster URL is required");
+            return;
+        }
+
+
         setSubmitting(true);
         setError(null);
 
+
         try {
+            // --------------------------------------------------
+            // POST Payload
+            // --------------------------------------------------
+
             const payload = {
-                title: form.title,
-                description: form.description,
-                genre: form.genre || "UNKNOWN",
+                title: form.title.trim(),
+
+                description:
+                    form.description.trim(),
+
+                // NEW
+                type: form.type,
+
+                genre: form.genre,
+
                 releaseDate:
-                    form.releaseDate || null,
-                imdbRating: form.imdbRating
-                    ? Number(form.imdbRating)
-                    : 0,
-                length: form.length
-                    ? Number(form.length)
-                    : 0,
+                    form.releaseDate,
+
+                imdbRating: rating,
+
+                length: length,
+
                 posterUrl:
-                    form.posterUrl || null,
+                    form.posterUrl.trim(),
             };
+
+
+            console.log(
+                "Adding movie:",
+                payload
+            );
 
 
             const res = await fetch(
                 ADD_MOVIE_URL,
                 {
                     method: "POST",
+
                     headers: {
                         "Content-Type":
                             "application/json",
                     },
+
                     body: JSON.stringify(payload),
                 }
             );
 
 
             if (!res.ok) {
+                let message = "";
+
+                try {
+                    message =
+                        await res.text();
+                } catch {
+                    message = "";
+                }
+
                 throw new Error(
-                    `Failed to add movie (${res.status})`
+                    message ||
+                    `Failed to add movie(${res.status})`
                 );
             }
 
 
-            onAdded?.();
+            console.log(
+                "Movie added successfully"
+            );
+
+
+            // Refresh movies
+            await onAdded?.();
+
+            // Close modal
             onClose();
 
         } catch (err) {
-            setError(err.message);
+            console.error(
+                "Add movie error:",
+                err
+            );
 
+            setError(
+                err.message ||
+                "Failed to add movie"
+            );
         } finally {
             setSubmitting(false);
         }
     };
 
 
+    // --------------------------------------------------
+    // Input styles
+    // --------------------------------------------------
+
     const inputClass =
         "w-full text-sm rounded-sm px-3 py-2.5 outline-none transition-all duration-300";
-
 
     const inputStyle = {
         fontFamily: sans,
         background: theme.inputBg,
-        border: `1px solid ${theme.border}`,
+        border: `1px solid ${theme.border} `,
         color: theme.text,
     };
 
@@ -409,7 +566,6 @@ function AddMovieModal({
             centered
             destroyOnClose
             width={600}
-
             closeIcon={
                 <X
                     size={17}
@@ -419,11 +575,10 @@ function AddMovieModal({
                     }}
                 />
             }
-
             title={
                 <div>
                     <p
-                        className="text-2xl font-medium text-shadow-sm text-black"
+                        className="text-2xl font-medium text-shadow-sm"
                         style={{
                             fontFamily: serif,
                             color: theme.text,
@@ -433,7 +588,7 @@ function AddMovieModal({
                     </p>
 
                     <p
-                        className="text-xs mt-1 font-semibold text-shadow-sm text-black"
+                        className="text-xs mt-1 font-semibold text-shadow-sm"
                         style={{
                             fontFamily: sans,
                             color: theme.textFaint,
@@ -444,19 +599,18 @@ function AddMovieModal({
                     </p>
                 </div>
             }
-
             styles={{
                 mask: {
                     background:
                         "rgba(0, 0, 0, 0.65)",
                     backdropFilter:
                         "blur(5px)",
-
                 },
 
                 content: {
-                    background: theme.panelSolid,
-                    border: `1px solid ${theme.border}`,
+                    background:
+                        theme.panelSolid,
+                    border: `1px solid ${theme.border} `,
                     boxShadow: theme.shadow,
                     padding: "0",
                     borderRadius: "50px",
@@ -466,7 +620,7 @@ function AddMovieModal({
                     background:
                         "transparent",
                     borderBottom:
-                        `0px solid ${theme.border}`,
+                        `0px solid ${theme.border} `,
                     padding:
                         "20px 24px 16px",
                     marginBottom: 0,
@@ -477,12 +631,10 @@ function AddMovieModal({
                         theme.panelSolid,
                     padding:
                         "20px 24px 24px",
-
-
                 },
             }}
         >
-            <div className="flex flex-col gap-4 ">
+            <div className="flex flex-col gap-4">
 
                 {/* Error */}
                 {error && (
@@ -494,7 +646,7 @@ function AddMovieModal({
                             background:
                                 theme.accentSoft,
                             border:
-                                `1px solid ${theme.border}`,
+                                `1px solid ${theme.border} `,
                             fontFamily: sans,
                         }}
                     >
@@ -510,7 +662,9 @@ function AddMovieModal({
                 >
                     <input
                         value={form.title}
-                        onChange={update("title")}
+                        onChange={update(
+                            "title"
+                        )}
                         placeholder="e.g. Interstellar"
                         className={inputClass}
                         style={inputStyle}
@@ -524,60 +678,103 @@ function AddMovieModal({
                     theme={theme}
                 >
                     <textarea
-                        value={form.description}
+                        value={
+                            form.description
+                        }
                         onChange={update(
                             "description"
                         )}
                         rows={3}
                         placeholder="Short synopsis..."
-                        className={`${inputClass} resize-none`}
+                        className={`${inputClass} resize - none`}
                         style={inputStyle}
                     />
                 </Field>
 
 
-                {/* Genre + Release Date */}
+                {/* Type + Genre */}
                 <div className="grid grid-cols-2 gap-4">
 
+                    {/* Type */}
+                    <Field
+                        label="Type"
+                        theme={theme}
+                    >
+                        <select
+                            value={form.type}
+                            onChange={update(
+                                "type"
+                            )}
+                            className={
+                                inputClass
+                            }
+                            style={
+                                inputStyle
+                            }
+                        >
+                            <option value="">
+                                Select type
+                            </option>
+
+                            <option value="MOVIE">
+                                Movie
+                            </option>
+
+                            <option value="SERIES">
+                                Series
+                            </option>
+                        </select>
+                    </Field>
+
+
+                    {/* Genre */}
                     <Field
                         label="Genre"
                         theme={theme}
                     >
                         <input
-                            value={form.genre}
+                            value={
+                                form.genre
+                            }
                             onChange={update(
                                 "genre"
                             )}
                             placeholder="e.g. SCI_FI"
-                            className={inputClass}
-                            style={inputStyle}
-                        />
-                    </Field>
-
-
-                    <Field
-                        label="Release Date"
-                        theme={theme}
-                    >
-                        <input
-                            type="date"
-                            value={
-                                form.releaseDate
+                            className={
+                                inputClass
                             }
-                            onChange={update(
-                                "releaseDate"
-                            )}
-                            className={inputClass}
-                            style={inputStyle}
+                            style={
+                                inputStyle
+                            }
                         />
                     </Field>
 
                 </div>
 
 
+                {/* Release Date */}
+                <Field
+                    label="Release Date"
+                    theme={theme}
+                >
+                    <input
+                        type="date"
+                        value={
+                            form.releaseDate
+                        }
+                        onChange={update(
+                            "releaseDate"
+                        )}
+                        className={inputClass}
+                        style={inputStyle}
+                    />
+                </Field>
+
+
                 {/* Rating + Length */}
                 <div className="grid grid-cols-2 gap-4">
 
+                    {/* Rating */}
                     <Field
                         label="IMDB Rating"
                         theme={theme}
@@ -594,19 +791,24 @@ function AddMovieModal({
                                 "imdbRating"
                             )}
                             placeholder="0.0 – 10.0"
-                            className={inputClass}
-                            style={inputStyle}
+                            className={
+                                inputClass
+                            }
+                            style={
+                                inputStyle
+                            }
                         />
                     </Field>
 
 
+                    {/* Length */}
                     <Field
                         label="Length (minutes)"
                         theme={theme}
                     >
                         <input
                             type="number"
-                            min={0}
+                            min={1}
                             value={
                                 form.length
                             }
@@ -614,8 +816,12 @@ function AddMovieModal({
                                 "length"
                             )}
                             placeholder="e.g. 169"
-                            className={inputClass}
-                            style={inputStyle}
+                            className={
+                                inputClass
+                            }
+                            style={
+                                inputStyle
+                            }
                         />
                     </Field>
 
@@ -646,9 +852,11 @@ function AddMovieModal({
                     className="flex justify-end gap-2 pt-4 mt-1"
                     style={{
                         borderTop:
-                            `1px solid ${theme.border}`,
+                            `1px solid ${theme.border} `,
                     }}
                 >
+
+                    {/* Cancel */}
                     <Button
                         onClick={onClose}
                         disabled={submitting}
@@ -659,7 +867,7 @@ function AddMovieModal({
                             background:
                                 "transparent",
                             border:
-                                `1px solid ${theme.border}`,
+                                `1px solid ${theme.border} `,
                             color:
                                 theme.textDim,
                             fontFamily: sans,
@@ -669,6 +877,7 @@ function AddMovieModal({
                     </Button>
 
 
+                    {/* Add */}
                     <Button
                         loading={submitting}
                         onClick={
@@ -681,7 +890,7 @@ function AddMovieModal({
                             background:
                                 theme.accent,
                             border:
-                                `1px solid ${theme.accent}`,
+                                `1px solid ${theme.accent} `,
                             color:
                                 theme.panelSolid,
                             fontFamily: sans,
@@ -689,6 +898,7 @@ function AddMovieModal({
                     >
                         Add Movie
                     </Button>
+
                 </div>
 
             </div>
@@ -697,19 +907,28 @@ function AddMovieModal({
 }
 
 
-
-
 // --------------------------------------------------
 // Dashboard
 // --------------------------------------------------
 
 function Dashboard() {
+
     const { theme } = useTheme();
-    const [selectedMovie, setSelectedMovie] = useState(null);
-    const [detailsOpen, setDetailsOpen] = useState(false);
+
+    const [
+        selectedMovie,
+        setSelectedMovie,
+    ] = useState(null);
+
+    const [
+        detailsOpen,
+        setDetailsOpen,
+    ] = useState(false);
 
 
-
+    // --------------------------------------------------
+    // Movies
+    // --------------------------------------------------
 
     const {
         movies,
@@ -718,10 +937,24 @@ function Dashboard() {
         refetch,
     } = useMovies();
 
+
+    // --------------------------------------------------
+    // Delete Movie
+    // --------------------------------------------------
+
     const handleDelete = async (movie) => {
+
         try {
-            console.log("Deleting movie:", movie);
-            console.log("Movie ID:", movie.id);
+            console.log(
+                "Deleting movie:",
+                movie
+            );
+
+            console.log(
+                "Movie ID:",
+                movie.id
+            );
+
 
             const response = await fetch(
                 `http://localhost:8080/api/movies/hard/${movie.id}`,
@@ -730,38 +963,99 @@ function Dashboard() {
                 }
             );
 
-            console.log("Delete response:", response.status);
+
+            console.log(
+                "Delete response:",
+                response.status
+            );
+
 
             if (!response.ok) {
-                const message = await response.text();
+
+                const message =
+                    await response.text();
+
                 throw new Error(
                     `Delete failed (${response.status}): ${message}`
                 );
             }
 
-            console.log("Movie deleted successfully");
+
+            console.log(
+                "Movie deleted successfully"
+            );
+
 
             await refetch();
 
         } catch (error) {
-            console.error("Delete movie error:", error);
+
+            console.error(
+                "Delete movie error:",
+                error
+            );
         }
     };
 
-    const [isOpen, setIsOpen] =
-        useState(false);
 
-    const [search, setSearch] =
-        useState("");
+    // --------------------------------------------------
+    // Filters
+    // --------------------------------------------------
 
-    const [genreFilter, setGenreFilter] =
-        useState("all");
+    const [
+        isOpen,
+        setIsOpen,
+    ] = useState(false);
 
-    const [yearFilter, setYearFilter] =
-        useState("all");
+    const [
+        search,
+        setSearch,
+    ] = useState("");
 
-    const [sortBy, setSortBy] =
-        useState("rating");
+    // NEW: Type Filter
+    const [
+        typeFilter,
+        setTypeFilter,
+    ] = useState("all");
+
+    const [
+        genreFilter,
+        setGenreFilter,
+    ] = useState("all");
+
+    const [
+        yearFilter,
+        setYearFilter,
+    ] = useState("all");
+
+    const [
+        sortBy,
+        setSortBy,
+    ] = useState("rating");
+
+
+    // --------------------------------------------------
+    // Types
+    // --------------------------------------------------
+
+    const allTypes = useMemo(() => {
+
+        const set = new Set(
+            movies
+                .map(
+                    (movie) =>
+                        movie.type
+                )
+                .filter(Boolean)
+        );
+
+
+        return [
+            "all",
+            ...Array.from(set).sort(),
+        ];
+
+    }, [movies]);
 
 
     // --------------------------------------------------
@@ -769,16 +1063,22 @@ function Dashboard() {
     // --------------------------------------------------
 
     const allGenres = useMemo(() => {
+
         const set = new Set(
             movies
-                .map((movie) => movie.genre)
+                .map(
+                    (movie) =>
+                        movie.genre
+                )
                 .filter(Boolean)
         );
+
 
         return [
             "all",
             ...Array.from(set).sort(),
         ];
+
     }, [movies]);
 
 
@@ -787,11 +1087,16 @@ function Dashboard() {
     // --------------------------------------------------
 
     const allYears = useMemo(() => {
+
         const set = new Set(
             movies
-                .map((movie) => movie.year)
+                .map(
+                    (movie) =>
+                        movie.year
+                )
                 .filter(Boolean)
         );
+
 
         return [
             "all",
@@ -799,6 +1104,7 @@ function Dashboard() {
                 (a, b) => b - a
             ),
         ];
+
     }, [movies]);
 
 
@@ -807,7 +1113,10 @@ function Dashboard() {
     // --------------------------------------------------
 
     const filtered = useMemo(() => {
+
         return movies
+
+            // Search
             .filter((movie) =>
                 movie.title
                     .toLowerCase()
@@ -815,137 +1124,194 @@ function Dashboard() {
                         search.toLowerCase()
                     )
             )
+
+            // Type
+            .filter(
+                (movie) =>
+                    typeFilter === "all" ||
+                    movie.type ===
+                    typeFilter
+            )
+
+            // Genre
             .filter(
                 (movie) =>
                     genreFilter === "all" ||
                     movie.genre ===
                     genreFilter
             )
+
+            // Year
             .filter(
                 (movie) =>
                     yearFilter === "all" ||
                     movie.year ===
                     Number(yearFilter)
             )
+
+            // Sort
             .sort((a, b) =>
                 sortBy === "rating"
                     ? b.rating - a.rating
                     : b.year - a.year
             );
+
     }, [
         movies,
         search,
+        typeFilter,
         genreFilter,
         yearFilter,
         sortBy,
     ]);
-    console.log(filtered);
+
 
     // --------------------------------------------------
     // Genre Distribution
     // --------------------------------------------------
 
-    const genreDistribution = useMemo(() => {
-        const counts = {};
+    const genreDistribution =
+        useMemo(() => {
 
-        filtered.forEach((movie) => {
-            counts[movie.genre] =
-                (counts[movie.genre] || 0) + 1;
-        });
+            const counts = {};
 
-        return Object.entries(counts)
-            .map(([name, value]) => ({
-                name,
-                value,
-            }))
-            .sort(
-                (a, b) =>
-                    b.value - a.value
-            )
-            .slice(0, 8);
+            filtered.forEach(
+                (movie) => {
 
-    }, [filtered]);
+                    counts[movie.genre] =
+                        (counts[movie.genre] ||
+                            0) + 1;
+                }
+            );
+
+
+            return Object.entries(counts)
+
+                .map(
+                    ([name, value]) => ({
+                        name,
+                        value,
+                    })
+                )
+
+                .sort(
+                    (a, b) =>
+                        b.value - a.value
+                )
+
+                .slice(0, 8);
+
+        }, [filtered]);
 
 
     // --------------------------------------------------
     // Rating By Year
     // --------------------------------------------------
 
-    const ratingsByYear = useMemo(() => {
-        const groups = {};
+    const ratingsByYear =
+        useMemo(() => {
 
-        filtered.forEach((movie) => {
-            if (!movie.year) return;
+            const groups = {};
 
-            if (!groups[movie.year]) {
-                groups[movie.year] = {
-                    year: movie.year,
-                    total: 0,
-                    count: 0,
-                };
-            }
+            filtered.forEach(
+                (movie) => {
 
-            groups[movie.year].total +=
-                movie.rating;
+                    if (!movie.year)
+                        return;
 
-            groups[movie.year].count += 1;
-        });
 
-        return Object.values(groups)
-            .map((group) => ({
-                year: group.year,
-                avgRating: +(
-                    group.total /
-                    group.count
-                ).toFixed(2),
-            }))
-            .sort(
-                (a, b) =>
-                    a.year - b.year
+                    if (!groups[movie.year]) {
+
+                        groups[movie.year] = {
+                            year: movie.year,
+                            total: 0,
+                            count: 0,
+                        };
+                    }
+
+
+                    groups[movie.year].total +=
+                        movie.rating;
+
+                    groups[movie.year].count +=
+                        1;
+                }
             );
 
-    }, [filtered]);
+
+            return Object.values(groups)
+
+                .map((group) => ({
+                    year: group.year,
+
+                    avgRating: +(
+                        group.total /
+                        group.count
+                    ).toFixed(2),
+                }))
+
+                .sort(
+                    (a, b) =>
+                        a.year - b.year
+                );
+
+        }, [filtered]);
 
 
     // --------------------------------------------------
     // Runtime By Genre
     // --------------------------------------------------
 
-    const runtimeByGenre = useMemo(() => {
-        const groups = {};
+    const runtimeByGenre =
+        useMemo(() => {
 
-        filtered.forEach((movie) => {
-            if (!movie.length) return;
+            const groups = {};
 
-            if (!groups[movie.genre]) {
-                groups[movie.genre] = {
-                    genre: movie.genre,
-                    total: 0,
-                    count: 0,
-                };
-            }
+            filtered.forEach(
+                (movie) => {
 
-            groups[movie.genre].total +=
-                movie.length;
+                    if (!movie.length)
+                        return;
 
-            groups[movie.genre].count += 1;
-        });
 
-        return Object.values(groups)
-            .map((group) => ({
-                genre: group.genre,
-                avgLength: Math.round(
-                    group.total /
-                    group.count
-                ),
-            }))
-            .sort(
-                (a, b) =>
-                    b.avgLength -
-                    a.avgLength
+                    if (!groups[movie.genre]) {
+
+                        groups[movie.genre] = {
+                            genre: movie.genre,
+                            total: 0,
+                            count: 0,
+                        };
+                    }
+
+
+                    groups[movie.genre].total +=
+                        movie.length;
+
+                    groups[movie.genre].count +=
+                        1;
+                }
             );
 
-    }, [filtered]);
+
+            return Object.values(groups)
+
+                .map((group) => ({
+                    genre: group.genre,
+
+                    avgLength:
+                        Math.round(
+                            group.total /
+                            group.count
+                        ),
+                }))
+
+                .sort(
+                    (a, b) =>
+                        b.avgLength -
+                        a.avgLength
+                );
+
+        }, [filtered]);
 
 
     // --------------------------------------------------
@@ -953,9 +1319,11 @@ function Dashboard() {
     // --------------------------------------------------
 
     const avgRating = useMemo(() => {
+
         if (!filtered.length) {
             return "0.0";
         }
+
 
         return (
             filtered.reduce(
@@ -981,6 +1349,7 @@ function Dashboard() {
                         a.rating
                 )
                 .slice(0, 10),
+
         [filtered]
     );
 
@@ -990,6 +1359,7 @@ function Dashboard() {
     // --------------------------------------------------
 
     if (loading) {
+
         return (
             <div
                 className="w-full h-full flex items-center justify-center"
@@ -1012,6 +1382,7 @@ function Dashboard() {
     // --------------------------------------------------
 
     if (error) {
+
         return (
             <div
                 className="w-full h-full flex items-center justify-center"
@@ -1037,6 +1408,7 @@ function Dashboard() {
 
     return (
         <>
+
             <div
                 className="w-full h-full flex gap-2 overflow-hidden transition-colors duration-500"
                 style={{
@@ -1046,7 +1418,7 @@ function Dashboard() {
             >
 
                 {/* Image Slider */}
-                <div className="w-[25%] h-full">
+                <div className="w-[30%] h-full">
                     <ImageSlider
                         images={
                             fallbackImages
@@ -1056,7 +1428,7 @@ function Dashboard() {
 
 
                 {/* Dashboard Content */}
-                <div className="w-[75%] h-full overflow-y-auto scrollbar-hide px-3 space-y-3">
+                <div className="w-[70%] h-full overflow-y-auto scrollbar-hide px-3 space-y-3">
 
                     {/* Stats */}
                     <div className="grid grid-cols-4 gap-4">
@@ -1105,6 +1477,7 @@ function Dashboard() {
                     {/* Charts Row 1 */}
                     <div className="grid grid-cols-2 gap-4">
 
+                        {/* Genre Distribution */}
                         <ChartCard
                             title="Genre distribution"
                             theme={theme}
@@ -1167,6 +1540,7 @@ function Dashboard() {
                         </ChartCard>
 
 
+                        {/* Rating By Year */}
                         <ChartCard
                             title="Avg rating by year"
                             theme={theme}
@@ -1180,6 +1554,7 @@ function Dashboard() {
                                         ratingsByYear
                                     }
                                 >
+
                                     <CartesianGrid
                                         strokeDasharray="3 3"
                                         stroke={
@@ -1225,9 +1600,12 @@ function Dashboard() {
                                         stroke={
                                             theme.accent
                                         }
-                                        strokeWidth={2}
+                                        strokeWidth={
+                                            2
+                                        }
                                         dot={false}
                                     />
+
                                 </LineChart>
                             </ResponsiveContainer>
                         </ChartCard>
@@ -1238,6 +1616,7 @@ function Dashboard() {
                     {/* Charts Row 2 */}
                     <div className="grid grid-cols-2 gap-4">
 
+                        {/* Runtime By Genre */}
                         <ChartCard
                             title="Avg runtime by genre (min)"
                             theme={theme}
@@ -1251,6 +1630,7 @@ function Dashboard() {
                                         runtimeByGenre
                                     }
                                 >
+
                                     <CartesianGrid
                                         strokeDasharray="3 3"
                                         stroke={
@@ -1307,6 +1687,7 @@ function Dashboard() {
                         </ChartCard>
 
 
+                        {/* Top Rated */}
                         <ChartCard
                             title="Top 10 rated"
                             theme={theme}
@@ -1427,6 +1808,7 @@ function Dashboard() {
                                     `1px solid ${theme.border}`,
                             }}
                         >
+
                             <Search
                                 size={16}
                                 style={{
@@ -1436,7 +1818,9 @@ function Dashboard() {
                             />
 
                             <input
-                                value={search}
+                                value={
+                                    search
+                                }
                                 onChange={(e) =>
                                     setSearch(
                                         e.target
@@ -1452,15 +1836,19 @@ function Dashboard() {
                                         theme.text,
                                 }}
                             />
+
                         </div>
 
 
-                        {/* Genre */}
+                        {/* Type Filter */}
                         <select
-                            value={genreFilter}
+                            value={
+                                typeFilter
+                            }
                             onChange={(e) =>
-                                setGenreFilter(
-                                    e.target.value
+                                setTypeFilter(
+                                    e.target
+                                        .value
                                 )
                             }
                             className="text-sm rounded-sm px-3 py-2 outline-none"
@@ -1475,6 +1863,52 @@ function Dashboard() {
                                     theme.text,
                             }}
                         >
+
+                            {allTypes.map(
+                                (type) => (
+                                    <option
+                                        key={
+                                            type
+                                        }
+                                        value={
+                                            type
+                                        }
+                                    >
+                                        {type ===
+                                            "all"
+                                            ? "All types"
+                                            : type}
+                                    </option>
+                                )
+                            )}
+
+                        </select>
+
+
+                        {/* Genre Filter */}
+                        <select
+                            value={
+                                genreFilter
+                            }
+                            onChange={(e) =>
+                                setGenreFilter(
+                                    e.target
+                                        .value
+                                )
+                            }
+                            className="text-sm rounded-sm px-3 py-2 outline-none"
+                            style={{
+                                fontFamily:
+                                    sans,
+                                background:
+                                    theme.inputBg,
+                                border:
+                                    `1px solid ${theme.border}`,
+                                color:
+                                    theme.text,
+                            }}
+                        >
+
                             {allGenres.map(
                                 (genre) => (
                                     <option
@@ -1492,15 +1926,19 @@ function Dashboard() {
                                     </option>
                                 )
                             )}
+
                         </select>
 
 
-                        {/* Year */}
+                        {/* Year Filter */}
                         <select
-                            value={yearFilter}
+                            value={
+                                yearFilter
+                            }
                             onChange={(e) =>
                                 setYearFilter(
-                                    e.target.value
+                                    e.target
+                                        .value
                                 )
                             }
                             className="text-sm rounded-sm px-3 py-2 outline-none"
@@ -1515,6 +1953,7 @@ function Dashboard() {
                                     theme.text,
                             }}
                         >
+
                             {allYears.map(
                                 (year) => (
                                     <option
@@ -1532,6 +1971,7 @@ function Dashboard() {
                                     </option>
                                 )
                             )}
+
                         </select>
 
 
@@ -1540,7 +1980,8 @@ function Dashboard() {
                             value={sortBy}
                             onChange={(e) =>
                                 setSortBy(
-                                    e.target.value
+                                    e.target
+                                        .value
                                 )
                             }
                             className="text-sm rounded-sm px-3 py-2 outline-none"
@@ -1555,6 +1996,7 @@ function Dashboard() {
                                     theme.text,
                             }}
                         >
+
                             <option value="rating">
                                 Sort by rating
                             </option>
@@ -1562,13 +2004,16 @@ function Dashboard() {
                             <option value="year">
                                 Sort by year
                             </option>
+
                         </select>
 
 
                         {/* Add Movie */}
                         <Button
                             onClick={() =>
-                                setIsOpen(true)
+                                setIsOpen(
+                                    true
+                                )
                             }
                             style={{
                                 height: "38px",
@@ -1580,8 +2025,7 @@ function Dashboard() {
                                     `1px solid ${theme.accent}`,
                                 color:
                                     theme.panelSolid,
-                                fontFamily:
-                                    sans,
+                                fontFamily: sans,
                             }}
                         >
                             Add Movie
@@ -1590,45 +2034,79 @@ function Dashboard() {
                     </div>
 
 
+                    {/* Movie Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                        {filtered.map((movie) => (
-                            <MovieCard
-                                key={movie.id}
-                                movie={movie}
-                                onDetails={(movie) => {
-                                    setSelectedMovie(movie);
-                                    setDetailsOpen(true);
-                                }}
-                                onDelete={handleDelete}
-                            />
-                        ))}
+
+                        {filtered.map(
+                            (movie) => (
+                                <MovieCard
+                                    key={
+                                        movie.id
+                                    }
+                                    movie={
+                                        movie
+                                    }
+
+                                    onDetails={(
+                                        movie
+                                    ) => {
+                                        setSelectedMovie(
+                                            movie
+                                        );
+
+                                        setDetailsOpen(
+                                            true
+                                        );
+                                    }}
+
+                                    onDelete={
+                                        handleDelete
+                                    }
+                                />
+                            )
+                        )}
+
                     </div>
 
                 </div>
+
             </div>
 
 
             {/* Add Movie Modal */}
             <AddMovieModal
                 open={isOpen}
-                onClose={() => setIsOpen(false)}
+                onClose={() =>
+                    setIsOpen(false)
+                }
                 onAdded={refetch}
                 theme={theme}
             />
 
+
             {/* Movie Details Modal */}
             <MovieDetailsModal
-                movie={selectedMovie}
-                open={detailsOpen}
+                movie={
+                    selectedMovie
+                }
+                open={
+                    detailsOpen
+                }
                 onClose={() => {
-                    setDetailsOpen(false);
-                    setSelectedMovie(null);
+                    setDetailsOpen(
+                        false
+                    );
+
+                    setSelectedMovie(
+                        null
+                    );
                 }}
             />
-
 
         </>
     );
 }
 
+
 export default Dashboard;
+
